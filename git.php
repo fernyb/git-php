@@ -38,15 +38,17 @@
 
     $title  = "git";
     $repo_index = "index.aux";
-
+    
     //repos could be made by an embeder script
-    if (!is_array($repos))
+    if (!is_array($repos)) {
         $repos = array();
-
+    }
+    
     if (file_exists($repo_index))   {
         $r = file($repo_index);
-        foreach ($r as $repo)
-            $repos[] = trim($repo);
+        foreach ($r as $repo){
+          $repos[] = trim($repo);
+        }
     }
     else if((file_exists($repo_directory)) && (is_dir($repo_directory))){
         if ($handle = opendir($repo_directory)) {
@@ -59,7 +61,7 @@
             closedir($handle);
         } 
     }
-    else    
+    else {    
         $repos = array(
             "/home/zack/scm/afa.git",
             "/home/zack/scm/nurikabe.git",
@@ -84,12 +86,14 @@
             "/home/zack/scm/zoogle.git",
             "/home/zack/scm/hello-servlet.git",
         );
-
+    }
+    
     sort($repos);
 
-    if (!isset($git_embed) && $git_embed != true)
-        $git_embed = false;
-
+    if (!isset($git_embed) && $git_embed != true) {
+      $git_embed = false;
+    }
+    
     foreach ($_GET as $var=>$val)
     {
         $_GET[$var] = str_replace(";", "", $_GET[$var]);
@@ -160,19 +164,28 @@
         echo "<div style=\"float:right;padding:7px;\">$plain</div>\n";
         exec("GIT_DIR=$repo git-cat-file blob $blob", &$out);
         echo "<div class=\"gitcode\">\n";
+        
         //echo highlight(implode("\n", $out));
         //echo highlight_code(implode("\n",$out));
         highlight_string(implode("\n",$out));
         //echo pretty_code(implode("\n", $out));
+        
         echo "</div>\n";
     }
 
     function html_diff($proj, $commit, $parent)    {
         $repo = get_repo_path($proj);
+        $repo = get_git($repo);
+        
         $out = array();
         exec("GIT_DIR=$repo git-diff $parent $commit", &$out);
+        if(count($out) == 0) {
+          exec("GIT_DIR=$repo git diff $parent $commit", &$out);
+        }
+        
         echo "<div class=\"gitcode\">\n";
-        echo highlight_code(implode("\n",$out));
+        $code = highlight_code(implode("\n",$out));
+        echo pretty_code($code);
         echo "</div>\n";
     }
 
@@ -213,8 +226,8 @@
     }
 
     function html_desc($repo)    {
-        
-        $desc = file_get_contents("$repo/description"); 
+        $path = get_git($repo);
+        $desc = file_get_contents("{$path}/description"); 
         $owner = get_file_owner($repo);
         $last =  get_last($repo);
 
@@ -231,13 +244,22 @@
         echo "<table>\n";
         echo "<tr><th>Project</th><th>Description</th><th>Owner</th><th>Last Changed</th><th>Download</th></tr>\n";
         foreach ($repos as $repo)   {
-            $desc = short_desc(file_get_contents("$repo/description")); 
+          $path = (file_exists("{$repo}/description") ? "{$repo}/description" : false);
+          if($path === false) {
+            $path = (file_exists("{$repo}/.git/description") ? "{$repo}/.git/description" : false);
+          }
+          
+          if($path) {
+            $desc = short_desc(file_get_contents($path)); 
             $owner = get_file_owner($repo);
             $last =  get_last($repo);
             $proj = get_project_link($repo);
             $dlt = get_project_link($repo, "targz");
             $dlz = get_project_link($repo, "zip");
             echo "<tr><td>$proj</td><td>$desc</td><td>$owner</td><td>$last</td><td>$dlt | $dlz</td></tr>\n";
+          } else {
+            echo "<tr style='color:red;'><td>{$repo}/description</td><td> Not Found </td><td> - </td><td> - </td><td>- | -</td></tr>\n";
+          }
         }
         echo "</table>";
     }
@@ -252,8 +274,8 @@
             echo "<head>\n";
             echo "\t<title>$title</title>\n";
             echo "\t<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\"/>\n";
-            echo "\t<link href=\"prettify.css\" type=\"text/css\" rel=\"stylesheet\" />\n";
-            echo "\t<script type=\"text/javascript\" src=\"prettify.js\"></script>\n";
+            echo "\t<link href=\"/stylesheets/prettify.css\" type=\"text/css\" rel=\"stylesheet\" />\n";
+            echo "\t<script type=\"text/javascript\" src=\"/javascripts/prettify.js\"></script>\n";
             echo "</head>\n";
             echo "<body onload=\"prettyPrint()\">\n";
         }
@@ -315,20 +337,22 @@
         return git_tree($gitdir, "HEAD");
     }
 
-    function git_tree($gitdir, $tree) {
-
+    function git_tree($repo, $tree) {
+        $gitdir = get_git($repo);
+        
         $out = array();
         $command = "GIT_DIR=$gitdir git-ls-tree --name-only $tree";
+        
         exec($command, &$out);
     }
 
     function get_git($repo) {
-
-        if (file_exists("$repo/.git"))
-            $gitdir = "$repo/.git";
-        else
-            $gitdir = $repo;
-        return $gitdir;
+      if (file_exists("{$repo}/.git")) {
+        $gitdir = "{$repo}/.git";
+      } else {
+        $gitdir = $repo;
+      }
+      return $gitdir;
     }
 
     function get_file_owner($path)  {
@@ -342,7 +366,12 @@
 
     function get_last($repo)    {
         $out = array();
+        $repo = get_git($repo);
+        
         $date = exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", &$out);
+        if(count($out) == 0) {
+          $date = exec("GIT_DIR=$repo git rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", &$out);
+        }
         return date("D n/j/y G:i", (int)$date);
     }
 
@@ -360,11 +389,16 @@
         $out = array();
         $commit = array();
 
-        if (strlen($cid) <= 0)
+        if (strlen($cid) <= 0) {
             return 0;
-
+        }
+        $repo = get_git($repo);
+        
         exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 $cid", &$out);
-
+        if(count($out) == 0) {
+          exec("GIT_DIR=$repo git rev-list  --header --max-count=1 $cid", &$out);
+        }
+        
         $commit["commit_id"] = $out[0];
         $g = explode(" ", $out[1]);
         $commit["tree"] = $g[1];
@@ -665,10 +699,13 @@
 
         //strip the PHP tags if they were added by the script
         if($add_tags) {
-            
             $code = substr($code, 0, 26).substr($code, 36, (strlen($code) - 74));
         }
-
+        
+        if(substr($code, 0, 1) == ">") {
+          $code = substr($code, 1, strlen($code));
+        }
+        
         return $code;
     }
 
