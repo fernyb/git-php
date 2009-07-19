@@ -1,15 +1,14 @@
 <?php
 
 class Git {
-  private $projects = array();
+  public  $date_format = "D n/j/y G:i";
+  private $projects    = array();
   
   public function __construct($path) {
-    if(is_string($path) && file_exists($path)) {
-      array_push($this->projects, $path);
-    } else if(is_array($path)) { 
-      foreach($path as $repo) {
-        if(is_string($repo)) {
-          array_push($this->projects, $repo);
+    if(is_array($path)) { 
+      foreach($path as $name => $repo) {
+        if(is_string($name) && is_string($repo)) {
+          $this->projects[$name] = $repo;
         }
       }
     } else {
@@ -63,6 +62,151 @@ class Git {
   }
   
   
+  public function browse($project) {
+    if(isset($_GET['b'])) {
+        html_blob($project, $_GET['b']);
+    } else {
+      if(isset($_GET['t'])) {
+        $tree = $_GET['t'];
+      } else { 
+       $tree = "HEAD";
+       return $this->html_tree($project, $tree); 
+     }
+    }
+  }
+  
+  private function git_repo_path($project) {
+    foreach ($this->projects as $repo => $repo_path) {
+      $path = basename($repo);
+      if($path == $project) {
+        return $this->get_git($repo_path);
+      }
+    }
+    return false;
+  }
+  
+  private function git_ls_tree($repo, $tree) {
+    $ary = array();
+    $out = array();
+    //Have to strip the \t between hash and file
+    exec("GIT_DIR=$repo git-ls-tree $tree | sed -e 's/\t/ /g'", &$out);
+    if(count($out) == 0) {
+      unset($out);
+      exec("GIT_DIR=$repo git ls-tree $tree | sed -e 's/\t/ /g'", &$out);
+    }
+    
+    foreach ($out as $line) {
+        $entry = array();
+        $arr = explode(" ", $line);
+        $entry['perm'] = $arr[0];
+        $entry['type'] = $arr[1];
+        $entry['hash'] = $arr[2];
+        $entry['file'] = $arr[3];
+        $ary[] = $entry;
+    }
+    return $ary;
+  }
+  
+  
+  private function git_commit($repo, $cid)  {
+    $out = array();
+    $commit = array();
+
+    if (strlen($cid) <= 0) {
+        return 0;
+    }
+    $repo = $this->get_git($repo);
+  
+    exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 $cid", &$out);
+    if(count($out) == 0) {
+      exec("GIT_DIR=$repo git rev-list  --header --max-count=1 $cid", &$out);
+    }
+    
+    $commit["commit_id"] = $out[0];
+    $g = explode(" ", $out[1]);
+    $commit["tree"] = $g[1];
+
+    $g = explode(" ", $out[2]);
+    $commit["parent"] = $g[1];
+
+    $g = explode(" ", $out[3]);
+
+    preg_match("/author(.*)<(.*)>(.*)/", $out[3], $matches);
+    if(count($matches) > 0) {
+      $commit['author'] = trim($matches[1]);
+      $commit['author_email'] = trim($matches[2]);
+      $commit['author_date'] = trim($matches[3]);
+      unset($matches);
+    }    
+    
+    preg_match("/committer(.*)<(.*)>(.*)/", $out[4], $matches);
+    if(count($matches) > 0) {
+      $commit['committer'] = trim($matches[1]);
+      $commit['committer_email'] = trim($matches[2]);
+      $commit['committer_date'] = trim($matches[3]);
+      unset($matches);
+    }
+
+    $commit["date"] = $commit['author_date'];
+    $commit["message"] = "";
+    $size = count($out);
+    for($i=5; $i < $size-1; $i++) {
+      $commit["message"] .= $out[$i];
+    }
+    $commit["message"] = trim($commit["message"]);
+    
+    return $commit;
+  }
+  
+  
+  public function short_log($project, $size=6) {
+    $repo = $this->git_repo_path($project);
+    $c = $this->git_commit($repo, "HEAD");
+    $log = array();
+    $commit = array();
+    for($i = 0; $i < $size && $c; $i++)  {
+      $commit['date']      = date($this->date_format, (int)$c['date']);
+      $commit['commit_id'] = $c['commit_id'];
+      $commit['parent']    = $c['parent'];
+      $commit['message']   = trim($this->short_desc($c['message'], 110));
+      $commit['commit_diff'] = $this->sanitized_url() . "p={$project}&a=commitdiff&h=". $commit['commit_id'] ."&hb=". $commit['parent'];
+      array_push($log, $commit);
+      
+      $c = git_commit($repo, $c["parent"]);
+      unset($commit);
+      $commit = array();
+    }
+    
+    return $log;
+  }
+  
+  private function short_desc($desc, $size=25)  {
+    $trunc = false;
+    $short = "";
+    $d = explode(" ", $desc);
+    foreach ($d as $str)    {
+        if (strlen($short) < $size)
+            $short .= "$str ";
+        else    {
+            $trunc = true;
+            break;
+        }
+    }
+
+    if ($trunc)
+        $short .= "...";
+
+    return $short;
+  }
+    
+  
+  private function html_tree($project, $tree) {
+    $path = $this->git_repo_path($project);
+    $t = $this->git_ls_tree($path, $tree);
+    var_dump($t);
+  }
+  
+  
   private function get_last_changed($repo) {
     $out = array();
     $repo = $this->get_git($repo);
@@ -70,7 +214,7 @@ class Git {
     if(count($out) == 0) {
       $date = exec("GIT_DIR=$repo git rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", &$out);
     }
-    return date("D n/j/y G:i", (int)$date);
+    return date($this->date_format, (int)$date);
   }
   
   

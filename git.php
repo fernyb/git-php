@@ -437,8 +437,12 @@
             
         $out = array();
         //Have to strip the \t between hash and file
-        exec("GIT_DIR=$repo git-ls-tree $tree | sed -e 's/\t/ /g'", &$out);
-
+        exec("GIT_DIR=$repo/.git git-ls-tree $tree | sed -e 's/\t/ /g'", &$out);
+        if(count($out) == 0) {
+          unset($out);
+          exec("GIT_DIR=$repo/.git git ls-tree $tree | sed -e 's/\t/ /g'", &$out);
+        }
+        
         foreach ($out as $line) {
             $entry = array();
             $arr = explode(" ", $line);
