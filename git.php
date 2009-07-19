@@ -137,10 +137,11 @@
     html_footer();
 
     function html_summary($proj)    {
-        $repo = get_repo_path($proj);
-        html_desc($repo);
-        if (!isset($_GET['t']) && !isset($_GET['b']))
-            html_shortlog($repo, 6);
+      $repo = get_repo_path($proj);
+      html_desc($repo);
+      if (!isset($_GET['t']) && !isset($_GET['b'])) {
+        html_shortlog($repo, 6);
+      }
     }
 
     function html_browse($proj)   {
@@ -183,8 +184,13 @@
           exec("GIT_DIR=$repo git diff $parent $commit", &$out);
         }
         
+        $source = implode("\n", $out);
+        $language = "diff";
+        $geshi = new GeSHi($source, $language);
+        $geshi->enable_line_numbers(GESHI_NORMAL_LINE_NUMBERS);
+        
         echo "<div class=\"gitcode\">\n";
-        echo pretty_code(implode("\n", $out));
+        echo $geshi->parse_code();
         echo "</div>\n";
     }
 
@@ -237,19 +243,14 @@
         echo "</table>\n";
     }
 
-    function html_home()    {
-
+    function html_home() {
         global $repos; 
         echo "<table>\n";
         echo "<tr><th>Project</th><th>Description</th><th>Owner</th><th>Last Changed</th><th>Download</th></tr>\n";
         foreach ($repos as $repo)   {
-          $path = (file_exists("{$repo}/description") ? "{$repo}/description" : false);
-          if($path === false) {
-            $path = (file_exists("{$repo}/.git/description") ? "{$repo}/.git/description" : false);
-          }
-          
+          $path = get_git($repo);
           if($path) {
-            $desc = short_desc(file_get_contents($path)); 
+            $desc = short_desc(file_get_contents("{$path}/description")); 
             $owner = get_file_owner($repo);
             $last =  get_last($repo);
             $proj = get_project_link($repo);
@@ -273,10 +274,8 @@
             echo "<head>\n";
             echo "\t<title>$title</title>\n";
             echo "\t<meta http-equiv=\"content-type\" content=\"text/html; charset=utf-8\"/>\n";
-            echo "\t<link href=\"/stylesheets/prettify.css\" type=\"text/css\" rel=\"stylesheet\" />\n";
-            echo "\t<script type=\"text/javascript\" src=\"/javascripts/prettify.js\"></script>\n";
             echo "</head>\n";
-            echo "<body onload=\"prettyPrint()\">\n";
+            echo "<body>\n";
         }
         /* Add rss2 link */
         if (isset($_GET['p']))  {
