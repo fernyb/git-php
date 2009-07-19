@@ -122,11 +122,11 @@
         html_title("Summary");
         html_summary($_GET['p']);
         html_spacer();
-        if ($_GET['a'] == "commitdiff")
-            html_diff($_GET['p'], $_GET['h'], $_GET['hb']);
-        else    {
-            html_title("Files");
-            html_browse($_GET['p']);
+        if ($_GET['a'] == "commitdiff") {
+          html_diff($_GET['p'], $_GET['h'], $_GET['hb']);
+        } else {
+          html_title("Files");
+          html_browse($_GET['p']);
         }
     }
     else    {
@@ -135,6 +135,7 @@
     }
 
     html_footer();
+
 
     function html_summary($proj)    {
       $repo = get_repo_path($proj);
@@ -174,14 +175,16 @@
         echo "</div>\n";
     }
 
-    function html_diff($proj, $commit, $parent)    {
+    function html_diff($proj, $commit, $parent) {
         $repo = get_repo_path($proj);
         $repo = get_git($repo);
         
         $out = array();
-        exec("GIT_DIR=$repo git-diff $parent $commit", &$out);
+        $command = "GIT_DIR=$repo git-diff $parent $commit";
+        exec($command, &$out);
         if(count($out) == 0) {
-          exec("GIT_DIR=$repo git diff $parent $commit", &$out);
+          $command = "GIT_DIR=$repo git diff $parent $commit";
+          exec($command, &$out);
         }
         
         $source = implode("\n", $out);
