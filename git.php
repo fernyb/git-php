@@ -175,7 +175,7 @@
         echo "</div>\n";
     }
 
-    function html_diff($proj, $commit, $parent) {
+    function html_diff($proj, $parent, $commit) {
         $repo = get_repo_path($proj);
         $repo = get_git($repo);
         

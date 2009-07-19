@@ -70,7 +70,7 @@ class Git {
         $tree = $_GET['t'];
       } else { 
        $tree = "HEAD";
-       return $this->html_tree($project, $tree); 
+       return $this->tree($project, $tree); 
      }
     }
   }
@@ -159,7 +159,50 @@ class Git {
   }
   
   
-  public function short_log($project, $size=6) {
+  public function diff_name_status($project, $parent_hash, $commit_hash) {
+    $path = $this->git_repo_path($project);
+    $repo = $this->get_git($path);
+    $out = array();
+    exec("GIT_DIR={$repo} git diff {$parent_hash} {$commit_hash} --name-status", &$out);
+    if(count($out) > 0) {
+      $status = array();
+      foreach($out as $file) {
+        preg_match("/^([A-Z]+)(.*)/", $file, $matches);
+        if(count($matches) == 3) {
+          $file = array();      
+          $file['status'] = trim($matches[1]);
+          $file['file']   = trim($matches[2]);
+          array_push($status, $file);
+        }
+      }
+      return $status;
+    }
+    return false;       
+  }
+  
+  
+  public function diff($project, $parent_hash, $commit_hash, $file=false) {
+    $path = $this->git_repo_path($project);
+    $repo = $this->get_git($path);
+    $out = array();
+    if($file !== false) {
+      exec("GIT_DIR={$repo} git diff {$parent_hash} {$commit_hash} -- {$file}", &$out);
+    } else {
+      exec("GIT_DIR={$repo} git diff {$parent_hash} {$commit_hash}", &$out);
+    }
+    
+    if(count($out) > 0) {
+      $source = implode("\n", $out);
+      $geshi = new GeSHi($source, "diff");
+      $diff = "<div class=\"git-diff\">\n";
+      $diff .= $geshi->parse_code();
+      $diff .= "</div>\n";
+      return $diff;
+    }
+    return false;
+  }
+  
+  public function log($project, $size=6) {
     $repo = $this->git_repo_path($project);
     $c = $this->git_commit($repo, "HEAD");
     $log = array();
@@ -200,7 +243,7 @@ class Git {
   }
     
   
-  private function html_tree($project, $tree) {
+  private function tree($project, $tree) {
     $path = $this->git_repo_path($project);
     $t = $this->git_ls_tree($path, $tree);
     var_dump($t);
