@@ -184,8 +184,7 @@
         }
         
         echo "<div class=\"gitcode\">\n";
-        $code = highlight_code(implode("\n",$out));
-        echo pretty_code($code);
+        echo pretty_code(implode("\n", $out));
         echo "</div>\n";
     }
 
