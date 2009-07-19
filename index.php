@@ -47,7 +47,9 @@ if(isset($_GET['p'])) {
   echo "<hr />";
     
   echo "<br /><br /><strong>Browse Project:</strong><br />";
-  $list = $git->browse($_GET['p']);
+  $tree = isset($_GET['t']) ? $_GET['t'] : "HEAD"; 
+  $project = $_GET['p'];  
+  $list = $git->browse($project, $tree);
   var_dump($list);
   
  exit; 

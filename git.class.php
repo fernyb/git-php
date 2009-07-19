@@ -62,16 +62,11 @@ class Git {
   }
   
   
-  public function browse($project) {
+  public function browse($project, $tree="HEAD") {
     if(isset($_GET['b'])) {
         html_blob($project, $_GET['b']);
     } else {
-      if(isset($_GET['t'])) {
-        $tree = $_GET['t'];
-      } else { 
-       $tree = "HEAD";
-       return $this->tree($project, $tree); 
-     }
+      return $this->tree($project, $tree); 
     }
   }
   
