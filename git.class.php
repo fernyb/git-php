@@ -88,9 +88,9 @@ class Git {
     return false;
   }
   
-  public function browse($project, $tree="HEAD") {
-    if(isset($_GET['b'])) {
-        html_blob($project, $_GET['b']);
+  public function browse($project, $tree="HEAD", $blob=false) {
+    if($blob == true) {
+      return $this->blob($project, $tree);
     } else {
       return $this->tree($project, $tree); 
     }

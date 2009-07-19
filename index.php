@@ -66,10 +66,21 @@ if(isset($_GET['p'])) {
     
   echo "<br /><br /><strong>Browse Project:</strong><br />";
 
+  
   $tree = isset($_GET['t']) ? $_GET['t'] : "HEAD"; 
+
   $project = $_GET['p'];  
-  $list = $git->browse($project, $tree);
-  var_dump($list);
+  
+  if(isset($_GET['b'])) {
+    $tree = $_GET['b'];
+    echo "Blob:<br />";
+    $list = $git->browse($project, $tree, true);
+    echo $list;
+  } else {
+    $list = $git->browse($project, $tree);
+    var_dump($list); 
+  }
+ 
 
   
  exit; 
