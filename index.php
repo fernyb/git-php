@@ -18,6 +18,24 @@ $git = new Git(array("invoizer" => "/Users/fernyb/rails/invoizer"));
 
 if(isset($_GET['p'])) {
   
+  if(isset($_GET['dl']) && $_GET['dl'] == "plain") {
+    $project   = $_GET['p'];
+    $file_hash = $_GET['h'];
+    
+    echo "<br /><strong>Plain View Source Code</strong><br />";
+    $source = $git->plain($project, $file_hash);
+    var_dump($source);
+  }
+  
+  if(isset($_GET['b'])) {
+    echo "<br /><br /><strong>Blob</strong><br /><br />";
+    $project   = $_GET['p'];
+    $blob = $git->blob($project, $_GET['b']);        
+    echo $blob;
+    echo "<br />";
+  }
+  
+  
   if(isset($_GET['a']) && $_GET['a'] == "commitdiff") {
     
     echo "<br /><strong>Commit Diff Name Status</strong><br />";
@@ -47,10 +65,12 @@ if(isset($_GET['p'])) {
   echo "<hr />";
     
   echo "<br /><br /><strong>Browse Project:</strong><br />";
+
   $tree = isset($_GET['t']) ? $_GET['t'] : "HEAD"; 
   $project = $_GET['p'];  
   $list = $git->browse($project, $tree);
   var_dump($list);
+
   
  exit; 
 }

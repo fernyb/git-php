@@ -164,7 +164,7 @@
         $out = array();
         $plain = "<a href=\"".sanitized_url()."p=$proj&dl=plain&h=$blob\">plain</a>";
         echo "<div style=\"float:right;padding:7px;\">$plain</div>\n";
-        exec("GIT_DIR=$repo git-cat-file blob $blob", &$out);
+        exec("GIT_DIR=$repo git cat-file blob $blob", &$out);
         echo "<div class=\"gitcode\">\n";
         
         //echo highlight(implode("\n", $out));
@@ -342,7 +342,7 @@
         $gitdir = get_git($repo);
         
         $out = array();
-        $command = "GIT_DIR=$gitdir git-ls-tree --name-only $tree";
+        $command = "GIT_DIR=$gitdir git ls-tree --name-only $tree";
         
         exec($command, &$out);
     }
@@ -482,10 +482,10 @@
     function write_plain()  {
         $repo = get_repo_path($_GET['p']);
         $hash = $_GET['h'];
-        header("Content-Type: text/plain");
-        $str = system("GIT_DIR=$repo git-cat-file blob $hash");
+        //header("Content-Type: text/plain");
+        $str = system("GIT_DIR=$repo git cat-file blob $hash");
         echo $str;
-        die();
+        //die();
     }
 
     function write_targz($repo) {

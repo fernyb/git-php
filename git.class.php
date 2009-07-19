@@ -61,6 +61,32 @@ class Git {
     }    
   }
   
+  public function blob($project, $hash) {
+    $path = $this->git_repo_path($project);
+    $repo = $this->get_git($path);
+    $out = array();
+    exec("GIT_DIR={$repo} git cat-file blob {$hash}", &$out);
+    if(count($out) > 0) { 
+      $source = implode("\n", $out);
+      $geshi = new GeSHi($source, "plain");
+      $code = "<div class=\"gitcode\">\n";
+      $code .= $geshi->parse_code();
+      $code .= "</div>\n";
+      return $code;
+    }
+    return false;
+  }
+  
+  public function plain($project, $file_hash) {
+    $path = $this->git_repo_path($project);
+    $repo = $this->get_git($path);
+    $out = array();
+    exec("GIT_DIR={$repo} git cat-file blob {$file_hash}", &$out);
+    if(count($out) > 0) {
+      return join("\n", $out);
+    }
+    return false;
+  }
   
   public function browse($project, $tree="HEAD") {
     if(isset($_GET['b'])) {
