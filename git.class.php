@@ -7,17 +7,11 @@ class Git {
   public function __construct($path) {
     if(is_array($path)) { 
       foreach($path as $name => $repo) {
-        if(is_string($name) && is_string($repo)) {
+        if(is_string($name) && is_string($repo) && file_exists($repo)) {
           $this->projects[$name] = $repo;
         }
       }
-    } else {
-      return false;
     }
-    if(count($this->projects) == 0) {
-      return false;
-    }
-    return true;
   }
   
   
@@ -50,7 +44,7 @@ class Git {
   }
   
   
-  private function get_project_link($repo) {
+  private function get_project_link($repo, $type=false) {
     $path = basename($repo);
     if(!$type) {
         return "<a href=\"". $this->sanitized_url() ."p=$path\">$path</a>";
@@ -65,7 +59,7 @@ class Git {
     $path = $this->git_repo_path($project);
     $repo = $this->get_git($path);
     $out = array();
-    exec("GIT_DIR={$repo} git cat-file blob {$hash}", &$out);
+    exec("GIT_DIR={$repo} git cat-file blob {$hash}", $out);
     if(count($out) > 0) { 
       $source = implode("\n", $out);
       $geshi = new GeSHi($source, "plain");
@@ -81,7 +75,7 @@ class Git {
     $path = $this->git_repo_path($project);
     $repo = $this->get_git($path);
     $out = array();
-    exec("GIT_DIR={$repo} git cat-file blob {$file_hash}", &$out);
+    exec("GIT_DIR={$repo} git cat-file blob {$file_hash}", $out);
     if(count($out) > 0) {
       return join("\n", $out);
     }
@@ -110,10 +104,10 @@ class Git {
     $ary = array();
     $out = array();
     //Have to strip the \t between hash and file
-    exec("GIT_DIR=$repo git-ls-tree $tree | sed -e 's/\t/ /g'", &$out);
+    exec("GIT_DIR=$repo git-ls-tree $tree | sed -e 's/\t/ /g'", $out);
     if(count($out) == 0) {
       unset($out);
-      exec("GIT_DIR=$repo git ls-tree $tree | sed -e 's/\t/ /g'", &$out);
+      exec("GIT_DIR=$repo git ls-tree $tree | sed -e 's/\t/ /g'", $out);
     }
     
     foreach ($out as $line) {
@@ -138,9 +132,9 @@ class Git {
     }
     $repo = $this->get_git($repo);
   
-    exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 $cid", &$out);
+    exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 $cid", $out);
     if(count($out) == 0) {
-      exec("GIT_DIR=$repo git rev-list  --header --max-count=1 $cid", &$out);
+      exec("GIT_DIR=$repo git rev-list  --header --max-count=1 $cid", $out);
     }
     
     $commit["commit_id"] = $out[0];
@@ -184,7 +178,7 @@ class Git {
     $path = $this->git_repo_path($project);
     $repo = $this->get_git($path);
     $out = array();
-    exec("GIT_DIR={$repo} git diff {$parent_hash} {$commit_hash} --name-status", &$out);
+    exec("GIT_DIR={$repo} git diff {$parent_hash} {$commit_hash} --name-status", $out);
     if(count($out) > 0) {
       $status = array();
       foreach($out as $file) {
@@ -207,9 +201,9 @@ class Git {
     $repo = $this->get_git($path);
     $out = array();
     if($file !== false) {
-      exec("GIT_DIR={$repo} git diff {$parent_hash} {$commit_hash} -- {$file}", &$out);
+      exec("GIT_DIR={$repo} git diff {$parent_hash} {$commit_hash} -- {$file}", $out);
     } else {
-      exec("GIT_DIR={$repo} git diff {$parent_hash} {$commit_hash}", &$out);
+      exec("GIT_DIR={$repo} git diff {$parent_hash} {$commit_hash}", $out);
     }
     
     if(count($out) > 0) {
@@ -274,9 +268,9 @@ class Git {
   private function get_last_changed($repo) {
     $out = array();
     $repo = $this->get_git($repo);
-    $date = exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", &$out);
+    $date = exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", $out);
     if(count($out) == 0) {
-      $date = exec("GIT_DIR=$repo git rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", &$out);
+      $date = exec("GIT_DIR=$repo git rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", $out);
     }
     return date($this->date_format, (int)$date);
   }

@@ -122,7 +122,7 @@
         html_title("Summary");
         html_summary($_GET['p']);
         html_spacer();
-        if ($_GET['a'] == "commitdiff") {
+        if (array_key_exists('a', $_GET) && $_GET['a'] == "commitdiff") {
           html_diff($_GET['p'], $_GET['h'], $_GET['hb']);
         } else {
           html_title("Files");
@@ -164,7 +164,7 @@
         $out = array();
         $plain = "<a href=\"".sanitized_url()."p=$proj&dl=plain&h=$blob\">plain</a>";
         echo "<div style=\"float:right;padding:7px;\">$plain</div>\n";
-        exec("GIT_DIR=$repo git cat-file blob $blob", &$out);
+        exec("GIT_DIR=$repo git cat-file blob $blob", $out);
         echo "<div class=\"gitcode\">\n";
         
         //echo highlight(implode("\n", $out));
@@ -181,10 +181,10 @@
         
         $out = array();
         $command = "GIT_DIR=$repo git-diff $parent $commit";
-        exec($command, &$out);
+        exec($command, $out);
         if(count($out) == 0) {
           $command = "GIT_DIR=$repo git diff $parent $commit";
-          exec($command, &$out);
+          exec($command, $out);
         }
         
         $source = implode("\n", $out);
@@ -344,7 +344,7 @@
         $out = array();
         $command = "GIT_DIR=$gitdir git ls-tree --name-only $tree";
         
-        exec($command, &$out);
+        exec($command, $out);
     }
 
     function get_git($repo) {
@@ -361,7 +361,7 @@
         $pw = posix_getpwuid($s["uid"]);
         return preg_replace("/[,;]/", "", $pw["gecos"]);
 //        $out = array();
-//        $own = exec("GIT_DIR=$path git-rev-list  --header --max-count=1 HEAD | grep -a committer | cut -d' ' -f2-3" ,&$out);
+//        $own = exec("GIT_DIR=$path git-rev-list  --header --max-count=1 HEAD | grep -a committer | cut -d' ' -f2-3" ,$out);
 //        return $own;
     }
 
@@ -369,9 +369,9 @@
         $out = array();
         $repo = get_git($repo);
         
-        $date = exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", &$out);
+        $date = exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", $out);
         if(count($out) == 0) {
-          $date = exec("GIT_DIR=$repo git rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", &$out);
+          $date = exec("GIT_DIR=$repo git rev-list  --header --max-count=1 HEAD | grep -a committer | cut -f5-6 -d' '", $out);
         }
         return date("D n/j/y G:i", (int)$date);
     }
@@ -395,9 +395,9 @@
         }
         $repo = get_git($repo);
         
-        exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 $cid", &$out);
+        exec("GIT_DIR=$repo git-rev-list  --header --max-count=1 $cid", $out);
         if(count($out) == 0) {
-          exec("GIT_DIR=$repo git rev-list  --header --max-count=1 $cid", &$out);
+          exec("GIT_DIR=$repo git rev-list  --header --max-count=1 $cid", $out);
         }
         
         $commit["commit_id"] = $out[0];
@@ -408,9 +408,10 @@
         $commit["parent"] = $g[1];
 
         $g = explode(" ", $out[3]);
+        $commit["author"] = "";
         /* variable number of strings for the name */
         for ($i = 1; $g[$i][0] != '<' && $i < 5; $i++)   {
-            $commit["author"] .= "{$g[$i]} ";
+          $commit["author"] .= "{$g[$i]} ";
         }
 
         /* add the email */
@@ -437,10 +438,10 @@
             
         $out = array();
         //Have to strip the \t between hash and file
-        exec("GIT_DIR=$repo/.git git-ls-tree $tree | sed -e 's/\t/ /g'", &$out);
+        exec("GIT_DIR=$repo/.git git-ls-tree $tree | sed -e 's/\t/ /g'", $out);
         if(count($out) == 0) {
           unset($out);
-          exec("GIT_DIR=$repo/.git git ls-tree $tree | sed -e 's/\t/ /g'", &$out);
+          exec("GIT_DIR=$repo/.git git ls-tree $tree | sed -e 's/\t/ /g'", $out);
         }
         
         foreach ($out as $line) {
@@ -628,7 +629,7 @@
         if (isset($_GET['t']))
             $crumb .= "tree";
 
-        if ($_GET['a'] == 'commitdiff')
+        if (isset($_GET['a']) && $_GET['a'] == 'commitdiff')
             $crumb .= 'commitdiff';
 
         echo $crumb;

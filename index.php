@@ -13,7 +13,7 @@ foreach ($_GET as $var=>$val){
 }
 
 
-$git = new Git(array("invoizer" => "/Users/fernyb/rails/invoizer"));
+$git = new Git(array("Cortito" => "/Users/fernyb/projects/Cortito"));
 
 
 if(isset($_GET['p'])) {
@@ -60,7 +60,9 @@ if(isset($_GET['p'])) {
     
   echo "<br /><strong>Summary Commit Log:</strong><br />";
   $log = $git->log($_GET['p']);
-  var_dump($log);
+  foreach($log as $commitLog) {
+    var_dump($commitLog);
+  }
   
   echo "<hr />";
     
@@ -86,8 +88,5 @@ if(isset($_GET['p'])) {
  exit; 
 }
 
-$projects = $git->projects();
-
-var_dump($projects);
 
 ?>
